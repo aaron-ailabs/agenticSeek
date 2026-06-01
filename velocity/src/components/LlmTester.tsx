@@ -30,11 +30,23 @@ export default function LlmTester() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ prompt: prompt.trim() }),
       });
-      const data = await res.json();
-      setResult(data.result ?? JSON.stringify(data, null, 2));
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+
+      // Stream the response token-by-token
+      const reader = res.body?.getReader();
+      const decoder = new TextDecoder();
+      let accumulated = "";
+      if (reader) {
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+          accumulated += decoder.decode(value, { stream: true });
+          setResult(accumulated);
+        }
+      }
       setStatus("success");
     } catch {
-      setResult("Request failed. Check your backend connection and Groq API key.");
+      setResult("Request failed. Check your Grok (xAI) API key in Settings.");
       setStatus("error");
     }
   }
@@ -83,7 +95,7 @@ export default function LlmTester() {
 
           <div className="flex items-center justify-between">
             <span className="text-xs font-mono" style={{ color: "var(--muted)" }}>
-              POST /api/llm — returns <code>result</code>
+              POST /api/llm → streams via xAI Grok
             </span>
             <button
               type="submit"

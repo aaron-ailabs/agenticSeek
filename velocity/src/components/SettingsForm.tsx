@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Eye, EyeOff, Save, CheckCircle, AlertCircle } from "lucide-react";
 
 type FieldKey =
@@ -108,6 +108,17 @@ export default function SettingsForm() {
   const [values, setValues] = useState<Record<FieldKey, string>>(emptyValues);
   const [visible, setVisible] = useState<Record<FieldKey, boolean>>(emptyVisible);
   const [status, setStatus] = useState<SaveStatus>("idle");
+  // configured[key] = true means the backend already has a non-empty value for this key
+  const [configured, setConfigured] = useState<Partial<Record<FieldKey, boolean>>>({});
+
+  useEffect(() => {
+    fetch("/api/settings")
+      .then((r) => r.json())
+      .then((data) => {
+        if (data?.settings) setConfigured(data.settings as Record<FieldKey, boolean>);
+      })
+      .catch(() => {});
+  }, []);
 
   function toggleVisible(key: FieldKey) {
     setVisible((prev) => ({ ...prev, [key]: !prev[key] }));
@@ -131,7 +142,18 @@ export default function SettingsForm() {
           blob: values.blob,
         }),
       });
-      setStatus(res.ok ? "success" : "error");
+      if (res.ok) {
+        setStatus("success");
+        // Re-fetch configured badges to reflect newly saved keys
+        fetch("/api/settings")
+          .then((r) => r.json())
+          .then((data) => {
+            if (data?.settings) setConfigured(data.settings as Record<FieldKey, boolean>);
+          })
+          .catch(() => {});
+      } else {
+        setStatus("error");
+      }
     } catch {
       setStatus("error");
     } finally {
@@ -152,13 +174,28 @@ export default function SettingsForm() {
             }}
           >
             <div>
-              <label
-                htmlFor={key}
-                className="block text-sm font-medium mb-1"
-                style={{ color: "var(--foreground)" }}
-              >
-                {label}
-              </label>
+              <div className="flex items-center justify-between mb-1">
+                <label
+                  htmlFor={key}
+                  className="text-sm font-medium"
+                  style={{ color: "var(--foreground)" }}
+                >
+                  {label}
+                </label>
+                {configured[key] && (
+                  <span
+                    className="flex items-center gap-1 text-[10px] font-mono px-2 py-0.5 rounded-full"
+                    style={{
+                      background: "var(--success-dim, rgba(34,197,94,0.12))",
+                      color: "var(--success)",
+                      border: "1px solid var(--success-glow, rgba(34,197,94,0.3))",
+                    }}
+                  >
+                    <CheckCircle size={9} />
+                    Configured
+                  </span>
+                )}
+              </div>
               <p className="text-xs leading-relaxed" style={{ color: "var(--muted)" }}>
                 {description}
               </p>
