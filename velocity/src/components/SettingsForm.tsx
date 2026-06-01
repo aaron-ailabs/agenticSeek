@@ -3,7 +3,15 @@
 import { useState } from "react";
 import { Eye, EyeOff, Save, CheckCircle, AlertCircle } from "lucide-react";
 
-type FieldKey = "groq" | "neon" | "redis";
+type FieldKey =
+  | "groq"
+  | "grok"
+  | "neon"
+  | "redis"
+  | "redisToken"
+  | "search"
+  | "stripe"
+  | "blob";
 
 interface Field {
   key: FieldKey;
@@ -18,7 +26,14 @@ const FIELDS: Field[] = [
     key: "groq",
     label: "Groq API Key",
     placeholder: "gsk_...",
-    description: "Your Groq API key for LLM inference. Get one at console.groq.com.",
+    description: "Groq API key for fast LLM inference. Get one at console.groq.com.",
+    isSecret: true,
+  },
+  {
+    key: "grok",
+    label: "Grok API Key",
+    placeholder: "xai-...",
+    description: "xAI Grok API key for Grok model access. Get one at console.x.ai.",
     isSecret: true,
   },
   {
@@ -31,25 +46,67 @@ const FIELDS: Field[] = [
   {
     key: "redis",
     label: "Upstash Redis URL",
-    placeholder: "redis://default:token@host:port",
-    description: "Upstash Redis URL for caching, sessions, and ephemeral state.",
+    placeholder: "https://...-redis.upstash.io",
+    description: "Upstash Redis REST URL for caching, sessions, and ephemeral state.",
     isSecret: true,
+  },
+  {
+    key: "redisToken",
+    label: "Upstash Redis Token",
+    placeholder: "AX...",
+    description: "Upstash Redis REST token (paired with the Redis URL above).",
+    isSecret: true,
+  },
+  {
+    key: "search",
+    label: "Upstash Search URL",
+    placeholder: "https://...-search.upstash.io",
+    description: "Upstash Search (vector/semantic) endpoint URL.",
+    isSecret: true,
+  },
+  {
+    key: "stripe",
+    label: "Stripe Secret Key",
+    placeholder: "sk_live_... or sk_test_...",
+    description: "Stripe secret key for payment processing. Never expose this client-side.",
+    isSecret: true,
+  },
+  {
+    key: "blob",
+    label: "Blob Storage URL",
+    placeholder: "https://...",
+    description: "Vercel Blob or compatible storage base URL for file uploads.",
+    isSecret: false,
   },
 ];
 
 type SaveStatus = "idle" | "saving" | "success" | "error";
 
+const emptyValues: Record<FieldKey, string> = {
+  groq: "",
+  grok: "",
+  neon: "",
+  redis: "",
+  redisToken: "",
+  search: "",
+  stripe: "",
+  blob: "",
+};
+
+const emptyVisible: Record<FieldKey, boolean> = {
+  groq: false,
+  grok: false,
+  neon: false,
+  redis: false,
+  redisToken: false,
+  search: false,
+  stripe: false,
+  blob: false,
+};
+
 export default function SettingsForm() {
-  const [values, setValues] = useState<Record<FieldKey, string>>({
-    groq: "",
-    neon: "",
-    redis: "",
-  });
-  const [visible, setVisible] = useState<Record<FieldKey, boolean>>({
-    groq: false,
-    neon: false,
-    redis: false,
-  });
+  const [values, setValues] = useState<Record<FieldKey, string>>(emptyValues);
+  const [visible, setVisible] = useState<Record<FieldKey, boolean>>(emptyVisible);
   const [status, setStatus] = useState<SaveStatus>("idle");
 
   function toggleVisible(key: FieldKey) {
@@ -63,7 +120,16 @@ export default function SettingsForm() {
       const res = await fetch("/api/settings", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ groq: values.groq, neon: values.neon, redis: values.redis }),
+        body: JSON.stringify({
+          groq: values.groq,
+          grok: values.grok,
+          neon: values.neon,
+          redis: values.redis,
+          redisToken: values.redisToken,
+          search: values.search,
+          stripe: values.stripe,
+          blob: values.blob,
+        }),
       });
       setStatus(res.ok ? "success" : "error");
     } catch {
@@ -74,62 +140,68 @@ export default function SettingsForm() {
   }
 
   return (
-    <form onSubmit={handleSave} className="space-y-6" aria-label="Settings form">
-      {FIELDS.map(({ key, label, placeholder, description, isSecret }) => (
-        <div
-          key={key}
-          className="rounded-xl p-5 space-y-3"
-          style={{
-            background: "var(--surface-raised)",
-            border: "1px solid var(--surface-border)",
-          }}
-        >
-          <div>
-            <label
-              htmlFor={key}
-              className="block text-sm font-medium mb-1"
-              style={{ color: "var(--foreground)" }}
-            >
-              {label}
-            </label>
-            <p className="text-xs" style={{ color: "var(--muted)" }}>
-              {description}
-            </p>
-          </div>
+    <form onSubmit={handleSave} className="space-y-4" aria-label="Settings form">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        {FIELDS.map(({ key, label, placeholder, description, isSecret }) => (
           <div
-            className="flex items-center gap-2 rounded-lg px-3 py-2.5"
+            key={key}
+            className="rounded-xl p-5 space-y-3"
             style={{
-              background: "var(--surface)",
+              background: "var(--surface-raised)",
               border: "1px solid var(--surface-border)",
             }}
           >
-            <input
-              id={key}
-              name={key}
-              type={isSecret && !visible[key] ? "password" : "text"}
-              value={values[key]}
-              onChange={(e) => setValues((prev) => ({ ...prev, [key]: e.target.value }))}
-              placeholder={placeholder}
-              autoComplete="off"
-              className="flex-1 bg-transparent text-sm outline-none font-mono"
-              style={{ color: "var(--foreground)", fontSize: "16px" }}
-              aria-describedby={`${key}-desc`}
-            />
-            {isSecret && (
-              <button
-                type="button"
-                onClick={() => toggleVisible(key)}
-                className="flex-shrink-0"
-                style={{ color: "var(--muted)" }}
-                aria-label={visible[key] ? `Hide ${label}` : `Show ${label}`}
+            <div>
+              <label
+                htmlFor={key}
+                className="block text-sm font-medium mb-1"
+                style={{ color: "var(--foreground)" }}
               >
-                {visible[key] ? <EyeOff size={16} /> : <Eye size={16} />}
-              </button>
-            )}
+                {label}
+              </label>
+              <p className="text-xs leading-relaxed" style={{ color: "var(--muted)" }}>
+                {description}
+              </p>
+            </div>
+            <div
+              className="flex items-center gap-2 rounded-lg px-3 py-2.5"
+              style={{
+                background: "var(--surface)",
+                border: "1px solid var(--surface-border)",
+              }}
+            >
+              <input
+                id={key}
+                name={key}
+                type={isSecret && !visible[key] ? "password" : "text"}
+                value={values[key]}
+                onChange={(e) =>
+                  setValues((prev) => ({ ...prev, [key]: e.target.value }))
+                }
+                placeholder={placeholder}
+                autoComplete="off"
+                className="flex-1 bg-transparent text-sm outline-none font-mono"
+                style={{ color: "var(--foreground)", fontSize: "16px" }}
+                aria-describedby={`${key}-desc`}
+              />
+              {isSecret && (
+                <button
+                  type="button"
+                  onClick={() => toggleVisible(key)}
+                  className="flex-shrink-0"
+                  style={{ color: "var(--muted)" }}
+                  aria-label={visible[key] ? `Hide ${label}` : `Show ${label}`}
+                >
+                  {visible[key] ? <EyeOff size={16} /> : <Eye size={16} />}
+                </button>
+              )}
+            </div>
+            <p id={`${key}-desc`} className="sr-only">
+              {description}
+            </p>
           </div>
-          <p id={`${key}-desc`} className="sr-only">{description}</p>
-        </div>
-      ))}
+        ))}
+      </div>
 
       {/* Save row */}
       <div className="flex items-center gap-4 pt-2">
@@ -147,13 +219,19 @@ export default function SettingsForm() {
         </button>
 
         {status === "success" && (
-          <span className="flex items-center gap-1.5 text-sm" style={{ color: "var(--success)" }}>
+          <span
+            className="flex items-center gap-1.5 text-sm"
+            style={{ color: "var(--success)" }}
+          >
             <CheckCircle size={15} />
             Saved successfully
           </span>
         )}
         {status === "error" && (
-          <span className="flex items-center gap-1.5 text-sm" style={{ color: "var(--danger)" }}>
+          <span
+            className="flex items-center gap-1.5 text-sm"
+            style={{ color: "var(--danger)" }}
+          >
             <AlertCircle size={15} />
             Failed to save. Check your connection.
           </span>
