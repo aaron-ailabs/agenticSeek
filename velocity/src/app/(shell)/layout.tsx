@@ -1,4 +1,5 @@
 import SidebarNavigation from "@/components/SidebarNavigation";
+import PingIndicator from "@/components/PingIndicator";
 
 export default function ShellLayout({ children }: { children: React.ReactNode }) {
   return (
@@ -20,12 +21,7 @@ export default function ShellLayout({ children }: { children: React.ReactNode })
             Velocity
           </span>
           <div className="ml-auto flex items-center gap-2">
-            <span
-              className="text-[10px] font-mono px-2 py-0.5 rounded-full"
-              style={{ background: "var(--accent-dim)", color: "var(--accent)", border: "1px solid var(--accent-glow)" }}
-            >
-              ONLINE
-            </span>
+            <PingIndicator />
           </div>
         </header>
 

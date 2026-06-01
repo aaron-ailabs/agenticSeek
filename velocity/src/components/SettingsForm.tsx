@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { Eye, EyeOff, Save, CheckCircle, AlertCircle } from "lucide-react";
 
-type FieldKey = "groqApiKey" | "neonDatabaseUrl" | "upstashRedisUrl";
+type FieldKey = "groq" | "neon" | "redis";
 
 interface Field {
   key: FieldKey;
@@ -15,21 +15,21 @@ interface Field {
 
 const FIELDS: Field[] = [
   {
-    key: "groqApiKey",
+    key: "groq",
     label: "Groq API Key",
     placeholder: "gsk_...",
     description: "Your Groq API key for LLM inference. Get one at console.groq.com.",
     isSecret: true,
   },
   {
-    key: "neonDatabaseUrl",
+    key: "neon",
     label: "Neon Database URL",
     placeholder: "postgresql://user:pass@host/db",
     description: "PostgreSQL connection string for your Neon serverless database.",
     isSecret: true,
   },
   {
-    key: "upstashRedisUrl",
+    key: "redis",
     label: "Upstash Redis URL",
     placeholder: "redis://default:token@host:port",
     description: "Upstash Redis URL for caching, sessions, and ephemeral state.",
@@ -41,14 +41,14 @@ type SaveStatus = "idle" | "saving" | "success" | "error";
 
 export default function SettingsForm() {
   const [values, setValues] = useState<Record<FieldKey, string>>({
-    groqApiKey: "",
-    neonDatabaseUrl: "",
-    upstashRedisUrl: "",
+    groq: "",
+    neon: "",
+    redis: "",
   });
   const [visible, setVisible] = useState<Record<FieldKey, boolean>>({
-    groqApiKey: false,
-    neonDatabaseUrl: false,
-    upstashRedisUrl: false,
+    groq: false,
+    neon: false,
+    redis: false,
   });
   const [status, setStatus] = useState<SaveStatus>("idle");
 
@@ -63,7 +63,7 @@ export default function SettingsForm() {
       const res = await fetch("/api/settings", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(values),
+        body: JSON.stringify({ groq: values.groq, neon: values.neon, redis: values.redis }),
       });
       setStatus(res.ok ? "success" : "error");
     } catch {

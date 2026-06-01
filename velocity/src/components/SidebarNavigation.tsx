@@ -2,13 +2,15 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { MessageSquare, ListTodo, ScrollText, Settings } from "lucide-react";
+import { MessageSquare, ListTodo, ScrollText, Settings, Database, Cpu } from "lucide-react";
 import { useState } from "react";
 
 const navItems = [
   { href: "/chat", icon: MessageSquare, label: "Chat" },
   { href: "/tasks", icon: ListTodo, label: "Tasks" },
   { href: "/logs", icon: ScrollText, label: "Logs" },
+  { href: "/memory", icon: Database, label: "Memory" },
+  { href: "/llm", icon: Cpu, label: "LLM Test" },
   { href: "/settings", icon: Settings, label: "Settings" },
 ];
 
