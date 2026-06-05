@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { searchIndex } from "@/lib/search";
+import { getSearchIndex } from "@/lib/search";
 import type { NextRequest } from "next/server";
 
 export async function GET(request: NextRequest) {
@@ -10,7 +10,7 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: "q is required" }, { status: 400 });
     }
 
-    const results = await searchIndex.search({ query: q, limit });
+    const results = await getSearchIndex().search({ query: q, limit });
     return NextResponse.json({ results });
   } catch (err) {
     console.error("[search/query] Error:", err);
